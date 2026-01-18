@@ -1,19 +1,7 @@
-import requests
+from binance.client import Client
 
-BASE_URL = "https://api.binance.com/api/v3"
+client = Client()
 
-def get_ticker(symbol: str):
-    symbol = symbol.upper() + "USDT"
-
-    price_url = f"{BASE_URL}/ticker/24hr?symbol={symbol}"
-    price_resp = requests.get(price_url).json()
-
-    if "code" in price_resp:
-        return None
-
-    return {
-        "symbol": symbol,
-        "price": float(price_resp["lastPrice"]),
-        "change": float(price_resp["priceChangePercent"]),
-        "volume": float(price_resp["quoteVolume"])
-    }
+def get_price(symbol: str):
+    data = client.get_symbol_ticker(symbol=symbol)
+    return data["price"]
