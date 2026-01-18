@@ -1,17 +1,13 @@
+import telebot
 import os
-from telegram.ext import ApplicationBuilder, CommandHandler
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+TOKEN = os.getenv("BOT_TOKEN")
 
-async def start(update, context):
-    await update.message.reply_text(
-        "🤖 SATOSHIDOFEBOT online!\n\nDigite /BTC para ver dados da moeda."
-    )
+bot = telebot.TeleBot(TOKEN)
 
-def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.run_polling()
+@bot.message_handler(commands=['start'])
+def start(msg):
+    bot.reply_to(msg, "🤖 SATOSHIDOFEBOT está online!")
 
-if name == "__main__":
-    main()
+print("Bot iniciado...")
+bot.infinity_polling()
