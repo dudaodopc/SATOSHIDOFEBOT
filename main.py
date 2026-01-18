@@ -1,13 +1,61 @@
 import telebot
 import os
+import requests
+
+# =========================
+# CONFIGURAÇÃO
+# =========================
 
 TOKEN = os.getenv("BOT_TOKEN")
 
+if not TOKEN:
+    raise Exception("BOT_TOKEN não encontrado")
+
 bot = telebot.TeleBot(TOKEN)
+
+# =========================
+# /start
+# =========================
 
 @bot.message_handler(commands=['start'])
 def start(msg):
-    bot.reply_to(msg, "🤖 SATOSHIDOFEBOT está online!")
+    bot.reply_to(
+        msg,
+        "🤖 SATOSHIDOFEBOT está online!\n\n"
+        "Comandos disponíveis:\n"
+        "/btc — Preço do Bitcoin"
+    )
 
-print("Bot iniciado...")
-bot.infinity_polling()
+# =========================
+# /btc
+# =========================
+
+@bot.message_handler(commands=['btc', 'BTC'])
+def btc(msg):
+    try:
+        url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
+        r = requests.get(url, timeout=10).json()
+
+        price = float(r['lastPrice'])
+        change = float(r['priceChangePercent'])
+        volume = float(r['volume'])
+
+        text = (
+            "🟠 *BITCOIN (BTC)*\n\n"
+            f"💰 Preço: ${price:,.2f}\n"
+            f"📊 Variação 24h: {change:.2f}%\n"
+            f"🔄 Volume 24h: {volume:,.0f} BTC\n\n"
+            "_Dados via Binance_"
+        )
+
+        bot.send_message(msg.chat.id, text, parse_mode="Markdown")
+
+    except Exception:
+        bot.reply_to(msg, "⚠️ Erro ao buscar dados do BTC")
+
+# =========================
+# START DO BOT
+# =========================
+
+print("🤖 Bot iniciado...")
+bot.infinity_polling(skip_pending=True)
