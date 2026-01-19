@@ -3,7 +3,12 @@ import os
 import requests
 
 TOKEN = os.getenv("BOT_TOKEN")
+
+if not TOKEN:
+    raise Exception("BOT_TOKEN não encontrado nas variáveis de ambiente")
+
 bot = telebot.TeleBot(TOKEN)
+
 
 @bot.message_handler(commands=['start'])
 def start(msg):
@@ -14,49 +19,34 @@ def start(msg):
         "/btc - Preço do Bitcoin"
     )
 
-@bot.message_handler(commands=['btc', 'BTC'])
+
+@bot.message_handler(commands=['btc'])
 def btc(msg):
     try:
-        # Binance
-        url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
-        response = requests.get(url, timeout=10)
+        url = "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"
 
-        if response.status_code == 200:
-            r = response.json()
-            price = float(r["lastPrice"])
-            change = float(r["priceChangePercent"])
-            volume = float(r["volume"])
-            source = "Binance"
-        else:
-            raise Exception("Binance falhou")
+        response = requests.get(
+            url,
+            timeout=10,
+            headers={"User-Agent": "Mozilla/5.0"}
+        )
 
-    except Exception:
-        try:
-            # CoinGecko
-            url = "https://api.coingecko.com/api/v3/coins/markets"
-            params = {"vs_currency": "usd", "ids": "bitcoin"}
-            response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
 
-            r = response.json()[0]
-            price = r["current_price"]
-            change = r["price_change_percentage_24h"]
-            volume = r["total_volume"]
-            source = "CoinGecko"
+        data = response.json()
+        price = float(data["price"])
 
-        except Exception as e:
-            bot.reply_to(msg, "⚠️ Erro ao buscar dados do BTC")
-            print("ERRO REAL:", e)
-            return
+        bot.send_message(
+            msg.chat.id,
+            f"🟠 BITCOIN (BTC)\n\n"
+            f"Preço atual: ${price:.2f}\n"
+            f"Fonte: Binance"
+        )
 
-    text = (
-        "🟠 BITCOIN (BTC)\n\n"
-        f"Preço: ${price:.2f}\n"
-        f"Variação 24h: {change:.2f}%\n"
-        f"Volume 24h: ${int(volume)}\n\n"
-        f"Fonte: {source}"
-    )
+    except Exception as e:
+        bot.reply_to(msg, "⚠️ Erro ao buscar dados do BTC")
+        print("ERRO REAL:", repr(e))
 
-    bot.send_message(msg.chat.id, text)
 
 print("Bot iniciado...")
 bot.infinity_polling(skip_pending=True)
