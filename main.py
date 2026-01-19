@@ -43,9 +43,10 @@ def btc(msg):
             f"Fonte: Binance"
         )
 
-    except Exception as e:
-        bot.reply_to(msg, "⚠️ Erro ao buscar dados do BTC")
-        print("ERRO REAL:", repr(e))
+   except Exception as e:
+    error_text = f"⚠️ Erro ao buscar dados do BTC\n\nErro real:\n{repr(e)}"
+    bot.send_message(msg.chat.id, error_text)
+    print("ERRO REAL:", repr(e))
 
 
 print("Bot iniciado...")
