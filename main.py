@@ -2,20 +2,9 @@ import telebot
 import os
 import requests
 
-# =========================
-# CONFIGURAÇÃO
-# =========================
-
 TOKEN = os.getenv("BOT_TOKEN")
 
-if not TOKEN:
-    raise Exception("BOT_TOKEN não encontrado")
-
 bot = telebot.TeleBot(TOKEN)
-
-# =========================
-# /start
-# =========================
 
 @bot.message_handler(commands=['start'])
 def start(msg):
@@ -25,10 +14,6 @@ def start(msg):
         "Comandos disponíveis:\n"
         "/btc — Preço do Bitcoin"
     )
-
-# =========================
-# /btc
-# =========================
 
 @bot.message_handler(commands=['btc', 'BTC'])
 def btc(msg):
@@ -63,3 +48,6 @@ def btc(msg):
     except Exception as e:
         bot.reply_to(msg, "⚠️ Erro ao buscar dados do BTC")
         print("ERRO BTC:", e)
+
+print("Bot iniciado...")
+bot.infinity_polling()
