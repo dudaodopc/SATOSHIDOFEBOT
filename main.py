@@ -34,11 +34,21 @@ def start(msg):
 def btc(msg):
     try:
         url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
-        r = requests.get(url, timeout=10).json()
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
 
-        price = float(r['lastPrice'])
-        change = float(r['priceChangePercent'])
-        volume = float(r['volume'])
+        response = requests.get(url, headers=headers, timeout=10)
+
+        if response.status_code != 200:
+            bot.reply_to(msg, "⚠️ Binance indisponível no momento")
+            return
+
+        r = response.json()
+
+        price = float(r["lastPrice"])
+        change = float(r["priceChangePercent"])
+        volume = float(r["volume"])
 
         text = (
             "🟠 *BITCOIN (BTC)*\n\n"
@@ -50,12 +60,6 @@ def btc(msg):
 
         bot.send_message(msg.chat.id, text, parse_mode="Markdown")
 
-    except Exception:
+    except Exception as e:
         bot.reply_to(msg, "⚠️ Erro ao buscar dados do BTC")
-
-# =========================
-# START DO BOT
-# =========================
-
-print("🤖 Bot iniciado...")
-bot.infinity_polling(skip_pending=True)
+        print("ERRO BTC:", e)
