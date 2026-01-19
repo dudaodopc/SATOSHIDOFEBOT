@@ -1,166 +1,136 @@
 import telebot
-import requests
 import os
-
-# ================= CONFIG =================
+import requests
+import time
 
 TOKEN = os.getenv("BOT_TOKEN")
 if not TOKEN:
-    raise Exception("BOT_TOKEN não encontrado")
+    raise RuntimeError("BOT_TOKEN não configurado")
 
-bot = telebot.TeleBot(TOKEN)
+bot = telebot.TeleBot(TOKEN, parse_mode="HTML")
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (SatoshidofeBot)"
+    "User-Agent": "Mozilla/5.0"
 }
 
 # ================= START =================
-
-@bot.message_handler(commands=['start'])
+@bot.message_handler(commands=["start"])
 def start(msg):
     bot.send_message(
         msg.chat.id,
         "🤖 <b>SATOSHIDOFEBOT ONLINE</b>\n\n"
         "📊 Monitoramento do mercado cripto\n\n"
         "⚔️ <b>Comandos:</b>\n"
-        "/btc - Preço do Bitcoin\n"
-        "/eth - Preço do Ethereum\n"
-        "/dominance - Dominância do BTC\n"
-        "/fear - Fear & Greed Index\n"
-        "/top - Top moedas do dia\n"
-        "/rompimentos - Possíveis rompimentos\n"
-        "/ajuda - Lista completa",
-        parse_mode="HTML"
+        "/btc – Preço do Bitcoin\n"
+        "/eth – Preço do Ethereum\n"
+        "/dominance – Dominância do BTC\n"
+        "/fear – Fear & Greed Index\n"
+        "/top – Top moedas do dia\n"
+        "/rompimentos – Possíveis rompimentos\n"
+        "/ajuda – Lista completa"
     )
 
 # ================= AJUDA =================
-
-@bot.message_handler(commands=['ajuda'])
+@bot.message_handler(commands=["ajuda"])
 def ajuda(msg):
-    bot.send_message(
-        msg.chat.id,
-        "🧭 <b>AJUDA</b>\n\n"
-        "/btc\n/eth\n/dominance\n/fear\n/top\n/rompimentos",
-        parse_mode="HTML"
-    )
+    start(msg)
 
 # ================= BTC =================
-
-@bot.message_handler(commands=['btc'])
+@bot.message_handler(commands=["btc"])
 def btc(msg):
     try:
         r = requests.get(
             "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd",
-            headers=HEADERS,
             timeout=10
         )
         price = r.json()["bitcoin"]["usd"]
-        bot.send_message(msg.chat.id, f"🟠 <b>BTC</b>\n💰 ${price:,.2f}", parse_mode="HTML")
-    except Exception as e:
+        bot.send_message(msg.chat.id, f"🟠 <b>BITCOIN</b>\n💰 ${price:,.2f}")
+    except:
         bot.send_message(msg.chat.id, "⚠️ Erro ao buscar BTC")
-        print("ERRO BTC:", repr(e))
 
 # ================= ETH =================
-
-@bot.message_handler(commands=['eth'])
+@bot.message_handler(commands=["eth"])
 def eth(msg):
     try:
         r = requests.get(
             "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
-            headers=HEADERS,
             timeout=10
         )
         price = r.json()["ethereum"]["usd"]
-        bot.send_message(msg.chat.id, f"🔵 <b>ETH</b>\n💰 ${price:,.2f}", parse_mode="HTML")
-    except Exception as e:
+        bot.send_message(msg.chat.id, f"🔵 <b>ETHEREUM</b>\n💰 ${price:,.2f}")
+    except:
         bot.send_message(msg.chat.id, "⚠️ Erro ao buscar ETH")
-        print("ERRO ETH:", repr(e))
 
-# ================= DOMINANCE =================
-
-@bot.message_handler(commands=['dominance'])
-def dominance(msg):
-    try:
-        r = requests.get("https://api.coingecko.com/api/v3/global", headers=HEADERS, timeout=10)
-        btc_dom = r.json()["data"]["market_cap_percentage"]["btc"]
-        bot.send_message(msg.chat.id, f"📊 <b>Dominância BTC</b>\n🟠 {btc_dom:.2f}%", parse_mode="HTML")
-    except Exception as e:
-        bot.send_message(msg.chat.id, "⚠️ Erro ao buscar dominância")
-        print("ERRO DOM:", repr(e))
-
-# ================= FEAR =================
-
-@bot.message_handler(commands=['fear'])
-def fear(msg):
-    try:
-        r = requests.get("https://api.alternative.me/fng/", timeout=10)
-        data = r.json()["data"][0]
-        bot.send_message(
-            msg.chat.id,
-            f"😱 <b>Fear & Greed</b>\n"
-            f"📉 Índice: {data['value']}\n"
-            f"🧠 {data['value_classification']}",
-            parse_mode="HTML"
-        )
-    except Exception as e:
-        bot.send_message(msg.chat.id, "⚠️ Erro ao buscar Fear & Greed")
-        print("ERRO FEAR:", repr(e))
-
-# ================= TOP =================
-
-@bot.message_handler(commands=['top'])
+# ================= TOP MOEDAS =================
+@bot.message_handler(commands=["top"])
 def top(msg):
     try:
         r = requests.get(
-            "https://api.coingecko.com/api/v3/coins/markets"
-            "?vs_currency=usd&order=market_cap_desc&per_page=5&page=1",
+            "https://api.coingecko.com/api/v3/coins/markets",
+            params={
+                "vs_currency": "usd",
+                "order": "market_cap_desc",
+                "per_page": 5,
+                "page": 1
+            },
             headers=HEADERS,
             timeout=10
         )
-        coins = r.json()
+
+        data = r.json()
+        if not isinstance(data, list):
+            raise ValueError("Resposta inválida")
+
         text = "🏆 <b>TOP MOEDAS</b>\n\n"
-        for c in coins:
-            text += f"🔹 <b>{c['name']} ({c['symbol'].upper()})</b>\n💰 ${c['current_price']:,.2f}\n\n"
-        bot.send_message(msg.chat.id, text, parse_mode="HTML")
+        for c in data:
+            text += f"• <b>{c['name']}</b> ({c['symbol'].upper()})\n💰 ${c['current_price']:,.2f}\n\n"
+
+        bot.send_message(msg.chat.id, text)
+
     except Exception as e:
         bot.send_message(msg.chat.id, "⚠️ Erro ao buscar TOP moedas")
         print("ERRO TOP:", repr(e))
 
-# ================= ROMPIMENTOS =================
-@bot.message_handler(commands=['rompimentos'])
+# ================= ROMPIMENTOS (BLINDADO) =================
+@bot.message_handler(commands=["rompimentos"])
 def rompimentos(msg):
     bot.send_message(msg.chat.id, "🔍 Analisando possíveis rompimentos...")
+
     try:
         r = requests.get(
-            "https://api.coingecko.com/api/v3/coins/markets"
-            "?vs_currency=usd&order=volume_desc&per_page=20&page=1",
+            "https://api.coingecko.com/api/v3/coins/markets",
+            params={
+                "vs_currency": "usd",
+                "order": "volume_desc",
+                "per_page": 20,
+                "page": 1
+            },
             headers=HEADERS,
             timeout=10
         )
 
         coins = r.json()
-        text = "🚀 <b>POSSÍVEIS ROMPIMENTOS</b>\n<i>Volume + variação 24h</i>\n\n"
+
+        if not isinstance(coins, list):
+            bot.send_message(msg.chat.id, "⚠️ CoinGecko indisponível no momento")
+            return
+
         encontrados = 0
+        text = "🚀 <b>POSSÍVEIS ROMPIMENTOS</b>\n<i>Volume + variação 24h</i>\n\n"
 
         for c in coins:
             change = c.get("price_change_percentage_24h")
-            if change is not None and change >= 8:
+            if isinstance(change, (int, float)) and change >= 8:
                 encontrados += 1
                 text += (
-                    f"🔥 <b>{c['name']} ({c['symbol'].upper()})</b>\n"
+                    f"🔥 <b>{c['name']}</b> ({c['symbol'].upper()})\n"
                     f"📈 {change:.2f}% | 💰 ${c['current_price']:,.4f}\n\n"
                 )
 
         if encontrados == 0:
             text += "😴 Nenhum rompimento forte no momento."
 
-        bot.send_message(msg.chat.id, text, parse_mode="HTML")
+        bot.send_message(msg.chat.id, text)
 
     except Exception as e:
-        bot.send_message(msg.chat.id, "⚠️ Erro ao buscar rompimentos")
-        print("ERRO ROMPIMENTOS:", repr(e))
-
-# ================= RUN =================
-
-print("🤖 Bot iniciado com sucesso")
-bot.infinity_polling(skip_pending=True)
+        bot.
