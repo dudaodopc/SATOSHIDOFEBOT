@@ -24,7 +24,7 @@ def start(msg):
 @bot.message_handler(commands=['btc', 'BTC'])
 def btc(msg):
     try:
-        # ===== TENTAR BINANCE =====
+        # ===== BINANCE =====
         url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
         headers = {"User-Agent": "Mozilla/5.0"}
         response = requests.get(url, headers=headers, timeout=10)
@@ -35,39 +35,42 @@ def btc(msg):
             price = float(r["lastPrice"])
             change = float(r["priceChangePercent"])
             volume = float(r["volume"])
-
             source = "Binance"
 
         else:
             raise Exception("Binance bloqueou")
 
-    except Exception as e:
-        # ===== FALLBACK COINGECKO =====
+    except Exception:
+        # ===== COINGECKO (endpoint correto) =====
         try:
-            url = "https://api.coingecko.com/api/v3/simple/price"
+            url = "https://api.coingecko.com/api/v3/coins/markets"
             params = {
-                "ids": "bitcoin",
-                "vs_currencies": "usd",
-                "include_24hr_change": "true"
+                "vs_currency": "usd",
+                "ids": "bitcoin"
             }
 
-            r = requests.get(url, params=params, timeout=10).json()
+            response = requests.get(url, params=params, timeout=10)
 
-            price = r["bitcoin"]["usd"]
-            change = r["bitcoin"]["usd_24h_change"]
-            volume = 0
+            if response.status_code != 200:
+                raise Exception("CoinGecko indisponível")
+
+            r = response.json()[0]
+
+            price = r["current_price"]
+            change = r["price_change_percentage_24h"]
+            volume = r["total_volume"]
             source = "CoinGecko"
 
         except Exception as e:
             bot.reply_to(msg, "⚠️ Erro ao buscar dados do BTC")
-            print("ERRO BTC FINAL:", e)
+            print("ERRO FINAL BTC:", e)
             return
 
     text = (
         "🟠 *BITCOIN (BTC)*\n\n"
         f"💰 *Preço:* ${price:,.2f}\n"
         f"📊 *Variação 24h:* {change:.2f}%\n"
-        f"📦 *Volume 24h:* {volume:,.0f} BTC\n\n"
+        f"📦 *Volume 24h:* ${volume:,.0f}\n\n"
         f"_Fonte: {source}_"
     )
 
